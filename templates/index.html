@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}Hospital Management System - Login{% endblock %}
+{% block page_title %}Welcome to Hospital Management System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body p-5">
+                <div class="text-center mb-4">
+                    <i class="fas fa-hospital fa-3x text-primary mb-3"></i>
+                    <h2>Hospital Management System</h2>
+                    <p class="text-muted">Secure access to patient data and analytics</p>
+                </div>
+                
+                <form id="loginForm">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" required>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-sign-in-alt"></i> Login
+                        </button>
+                    </div>
+                <div class="text-center mt-3">
+                    <a href="/signup" class="small">New patient? Create an account</a>
+                </div>
+                </form>
+                
+                <div class="mt-4">
+                    <h5>Demo Accounts:</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body p-3">
+                                    <h6><i class="fas fa-user-shield"></i> Admin</h6>
+                                    <small>Username: admin<br>Password: admin123</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body p-3">
+                                    <h6><i class="fas fa-user-md"></i> Doctor</h6>
+                                    <small>Username: dr_smith<br>Password: doctor123</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body p-3">
+                                    <h6><i class="fas fa-user"></i> Patient</h6>
+                                    <small>Username: patient1<br>Password: patient123</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body p-3">
+                                    <h6><i class="fas fa-flask"></i> Lab Tech</h6>
+                                    <small>Create account or use existing</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('loginForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    
+    try {
+        const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ username, password })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            localStorage.setItem('token', data.access_token);
+            localStorage.setItem('userRole', data.user.role);
+            
+            // Redirect based on role
+            switch(data.user.role) {
+                case 'admin':
+                    window.location.href = '/admin';
+                    break;
+                case 'doctor':
+                    window.location.href = '/doctor';
+                    break;
+                case 'patient':
+                    window.location.href = '/patient';
+                    break;
+                case 'lab_tech':
+                    window.location.href = '/lab';
+                    break;
+                default:
+                    alert('Unknown role');
+            }
+        } else {
+            alert('Login failed: ' + data.message);
+        }
+    } catch (error) {
+        console.error('Login error:', error);
+        alert('Login failed. Please try again.');
+    }
+});
+
+// Check if already logged in
+if (localStorage.getItem('token')) {
+    const role = localStorage.getItem('userRole');
+    switch(role) {
+        case 'admin':
+            window.location.href = '/admin';
+            break;
+        case 'doctor':
+            window.location.href = '/doctor';
+            break;
+        case 'patient':
+            window.location.href = '/patient';
+            break;
+        case 'lab_tech':
+            window.location.href = '/lab';
+            break;
+    }
+}
+</script>
+{% endblock %}

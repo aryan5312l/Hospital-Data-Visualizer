@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}Patient Dashboard - Hospital Management System{% endblock %}
+{% block page_title %}My Medical Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-user"></i> My Information</h5>
+            </div>
+            <div class="card-body">
+                <div id="patientInfo">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-notes-medical"></i> Recent Medical Notes</h5>
+            </div>
+            <div class="card-body">
+                <div id="medicalNotes">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-flask"></i> Recent Lab Reports</h5>
+            </div>
+            <div class="card-body">
+                <div id="labReports">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-calendar-check"></i> Upcoming Appointments</h5>
+            </div>
+            <div class="card-body">
+                <div id="upcomingAppointments">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-heartbeat"></i> Health Summary</h5>
+            </div>
+            <div class="card-body">
+                <div id="healthSummary">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Load patient dashboard data
+async function loadPatientDashboard() {
+    try {
+        const response = await apiRequest('/api/dashboard/patient');
+        const data = await response.json();
+        
+        // Update patient info
+        document.getElementById('patientInfo').innerHTML = `
+            <div class="row">
+                <div class="col-md-8">
+                    <h4>${data.patient.name}</h4>
+                    <p class="text-muted mb-1"><strong>Age:</strong> ${data.patient.age} years</p>
+                    <p class="text-muted mb-0"><strong>Gender:</strong> ${data.patient.gender}</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <span class="badge bg-success fs-6">Active Patient</span>
+                </div>
+            </div>
+        `;
+        
+        // Update medical notes
+        const notesHtml = data.medical_notes.map(note => `
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h6 class="card-title">${note.diagnosis}</h6>
+                    <p class="card-text">${note.treatment}</p>
+                    <small class="text-muted">
+                        <i class="fas fa-calendar"></i> ${new Date(note.date).toLocaleDateString()}
+                    </small>
+                </div>
+            </div>
+        `).join('');
+        
+        document.getElementById('medicalNotes').innerHTML = notesHtml || '<p class="text-muted">No medical notes available</p>';
+        
+        // Update lab reports
+        const reportsHtml = data.lab_reports.map(report => `
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="card-title">${report.test_name}</h6>
+                            <p class="card-text mb-1">Result: <strong>${report.result}</strong></p>
+                            <small class="text-muted">
+                                <i class="fas fa-calendar"></i> ${new Date(report.date).toLocaleDateString()}
+                            </small>
+                        </div>
+                        <span class="badge bg-${report.status === 'normal' ? 'success' : 'warning'}">${report.status}</span>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        
+        document.getElementById('labReports').innerHTML = reportsHtml || '<p class="text-muted">No lab reports available</p>';
+        
+        // Update upcoming appointments
+        const appointmentsHtml = data.upcoming_appointments.map(appointment => `
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="card-title">Appointment with Dr. ${appointment.doctor}</h6>
+                            <p class="card-text mb-1">
+                                <i class="fas fa-calendar"></i> ${new Date(appointment.date).toLocaleDateString()}
+                            </p>
+                            <small class="text-muted">
+                                <i class="fas fa-clock"></i> ${new Date(appointment.date).toLocaleTimeString()}
+                            </small>
+                        </div>
+                        <span class="badge bg-primary">${appointment.status}</span>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        
+        document.getElementById('upcomingAppointments').innerHTML = appointmentsHtml || '<p class="text-muted">No upcoming appointments</p>';
+        
+        // Update health summary
+        const healthSummaryHtml = `
+            <div class="row text-center">
+                <div class="col-6">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h5 class="text-primary">${data.medical_notes.length}</h5>
+                            <small>Medical Records</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h5 class="text-success">${data.lab_reports.length}</h5>
+                            <small>Lab Reports</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row text-center mt-3">
+                <div class="col-6">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h5 class="text-info">${data.upcoming_appointments.length}</h5>
+                            <small>Upcoming Appointments</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h5 class="text-warning">Active</h5>
+                            <small>Status</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('healthSummary').innerHTML = healthSummaryHtml;
+        
+    } catch (error) {
+        console.error('Error loading patient dashboard:', error);
+    }
+}
+
+// Initialize dashboard
+document.addEventListener('DOMContentLoaded', function() {
+    loadPatientDashboard();
+});
+</script>
+{% endblock %}

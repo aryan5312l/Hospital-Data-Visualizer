@@ -1,0 +1,14 @@
+id,name,age,gender,department,admission_date,diagnosis,severity
+1,Aarav Sharma,29,Male,Cardiology,2025-09-05,Hypertension,Moderate
+2,Isha Verma,35,Female,Neurology,2025-09-07,Migraine,Mild
+3,Vedant Patel,42,Male,Orthopedics,2025-09-10,Fracture,Moderate
+4,Diya Iyer,31,Female,Oncology,2025-09-12,Cancer,Severe
+5,Aditya Gupta,37,Male,Dermatology,2025-09-13,Skin Allergy,Mild
+6,Ananya Rao,26,Female,Endocrinology,2025-09-14,Diabetes,Moderate
+7,Rohit Kapoor,48,Male,Gastroenterology,2025-09-16,Acid Reflux,Moderate
+8,Meera Nair,22,Female,Pediatrics,2025-09-18,Common Cold,Mild
+9,Arjun Singh,33,Male,Cardiology,2025-09-19,Arrhythmia,Moderate
+10,Kavya Desai,40,Female,Psychiatry,2025-09-20,Anxiety,Mild
+11,Pranav Mehta,55,Male,Orthopedics,2025-09-22,Arthritis,Severe
+12,Sneha Joshi,30,Female,Endocrinology,2025-09-24,Thyroid Disorder,Moderate
+

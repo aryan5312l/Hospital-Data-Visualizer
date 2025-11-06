@@ -1,0 +1,39 @@
+patient_id,patient_name,test_name,test_date,result,normal_range,status
+1,Alice Johnson,Vitamin D,2024-01-25,40.9,10-100,normal
+1,Alice Johnson,White Blood Cells,2024-01-24,68.0,10-100,normal
+1,Alice Johnson,Cholesterol,2024-02-02,134.0,0-200,abnormal
+2,Bob Williams,Iron,2024-02-05,31.8,10-100,normal
+2,Bob Williams,Cholesterol,2024-01-29,181.7,0-200,critical
+2,Bob Williams,Potassium,2024-02-06,57.0,10-100,normal
+2,Bob Williams,Thyroid Stimulating Hormone,2024-01-28,32.3,10-100,normal
+2,Bob Williams,Urea,2024-01-26,74.3,10-100,normal
+3,Carol Davis,Potassium,2024-02-04,73.1,10-100,normal
+3,Carol Davis,Platelets,2024-01-26,49.3,10-100,normal
+3,Carol Davis,Platelets,2024-02-04,75.3,10-100,normal
+3,Carol Davis,Hemoglobin,2024-02-01,12.5,12-16,normal
+4,David Brown,Thyroid Stimulating Hormone,2024-02-04,34.6,10-100,normal
+4,David Brown,Red Blood Cells,2024-02-19,69.7,10-100,normal
+4,David Brown,Potassium,2024-02-10,66.2,10-100,normal
+5,Emma Wilson,White Blood Cells,2024-02-18,50.1,10-100,normal
+5,Emma Wilson,Red Blood Cells,2024-02-10,58.7,10-100,normal
+5,Emma Wilson,Hemoglobin,2024-02-22,12.9,12-16,normal
+6,Frank Miller,Blood Glucose,2024-02-17,98.9,70-100,normal
+6,Frank Miller,Potassium,2024-02-18,74.3,10-100,normal
+6,Frank Miller,Potassium,2024-02-29,44.5,10-100,normal
+6,Frank Miller,Thyroid Stimulating Hormone,2024-02-29,33.1,10-100,normal
+7,Grace Lee,White Blood Cells,2024-02-17,60.1,10-100,normal
+7,Grace Lee,Hemoglobin,2024-03-02,14.8,12-16,normal
+7,Grace Lee,Thyroid Stimulating Hormone,2024-02-24,57.5,10-100,normal
+8,Henry Taylor,Thyroid Stimulating Hormone,2024-03-05,34.2,10-100,normal
+8,Henry Taylor,Creatinine,2024-02-28,62.4,10-100,normal
+8,Henry Taylor,Iron,2024-02-26,40.4,10-100,normal
+8,Henry Taylor,Sodium,2024-02-27,59.4,10-100,normal
+8,Henry Taylor,Sodium,2024-03-10,71.9,10-100,normal
+9,Ivy Chen,Thyroid Stimulating Hormone,2024-03-12,38.7,10-100,normal
+9,Ivy Chen,Platelets,2024-03-10,41.2,10-100,normal
+9,Ivy Chen,Potassium,2024-03-08,67.0,10-100,normal
+9,Ivy Chen,Thyroid Stimulating Hormone,2024-03-13,40.2,10-100,normal
+10,Jack Anderson,Platelets,2024-03-09,43.0,10-100,normal
+10,Jack Anderson,White Blood Cells,2024-03-07,46.2,10-100,normal
+10,Jack Anderson,Creatinine,2024-03-14,75.0,10-100,normal
+10,Jack Anderson,Thyroid Stimulating Hormone,2024-03-02,64.6,10-100,normal

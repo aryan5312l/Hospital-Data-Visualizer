@@ -1,0 +1,321 @@
+{% extends "base.html" %}
+
+{% block title %}Doctor Dashboard - Hospital Management System{% endblock %}
+{% block page_title %}Doctor Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-user-md"></i> Doctor Information</h5>
+            </div>
+            <div class="card-body">
+                <div id="doctorInfo">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-line"></i> Patient Health Trends</h5>
+            </div>
+            <div class="card-body">
+                <div id="patientTrendsChart" class="chart-container"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-users"></i> My Patients</h5>
+            </div>
+            <div class="card-body">
+                <div id="patientsList">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-notes-medical"></i> Patient Management</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Add Vital Signs</h6>
+                        <form id="vitalsForm">
+                            <div class="mb-3">
+                                <label for="patientSelect" class="form-label">Select Patient</label>
+                                <select class="form-select" id="patientSelect" required>
+                                    <option value="">Choose patient...</option>
+                                </select>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="heartRate" class="form-label">Heart Rate (bpm)</label>
+                                        <input type="number" class="form-control" id="heartRate" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="temperature" class="form-label">Temperature (°C)</label>
+                                        <input type="number" step="0.1" class="form-control" id="temperature" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="systolicBP" class="form-label">Systolic BP</label>
+                                        <input type="number" class="form-control" id="systolicBP" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="diastolicBP" class="form-label">Diastolic BP</label>
+                                        <input type="number" class="form-control" id="diastolicBP" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="weight" class="form-label">Weight (kg)</label>
+                                        <input type="number" step="0.1" class="form-control" id="weight" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="height" class="form-label">Height (cm)</label>
+                                        <input type="number" step="0.1" class="form-control" id="height" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="glucose" class="form-label">Glucose Level (mg/dL)</label>
+                                <input type="number" step="0.1" class="form-control" id="glucose">
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Record Vitals
+                            </button>
+                        </form>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Add Medical Note</h6>
+                        <form id="medicalNoteForm">
+                            <div class="mb-3">
+                                <label for="notePatientSelect" class="form-label">Select Patient</label>
+                                <select class="form-select" id="notePatientSelect" required>
+                                    <option value="">Choose patient...</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="diagnosis" class="form-label">Diagnosis</label>
+                                <input type="text" class="form-control" id="diagnosis" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="symptoms" class="form-label">Symptoms</label>
+                                <textarea class="form-control" id="symptoms" rows="2"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="treatment" class="form-label">Treatment</label>
+                                <textarea class="form-control" id="treatment" rows="2"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="prescription" class="form-label">Prescription</label>
+                                <textarea class="form-control" id="prescription" rows="2"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Note
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Load doctor dashboard data
+async function loadDoctorDashboard() {
+    try {
+        const response = await apiRequest('/api/dashboard/doctor');
+        const data = await response.json();
+        
+        // Update doctor info
+        document.getElementById('doctorInfo').innerHTML = `
+            <div class="row">
+                <div class="col-md-8">
+                    <h4>Dr. ${data.doctor.name}</h4>
+                    <p class="text-muted mb-1"><strong>Specialization:</strong> ${data.doctor.specialization}</p>
+                    <p class="text-muted mb-0"><strong>Department:</strong> ${data.doctor.department}</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <span class="badge bg-primary fs-6">${data.patients.length} Patients</span>
+                </div>
+            </div>
+        `;
+        
+        // Update patients list
+        const patientsHtml = data.patients.map(patient => `
+            <div class="card mb-2">
+                <div class="card-body p-3">
+                    <h6 class="card-title">${patient.name}</h6>
+                    <p class="card-text mb-1">
+                        <small class="text-muted">Age: ${patient.age} | Gender: ${patient.gender}</small>
+                    </p>
+                    ${patient.latest_vitals ? `
+                        <div class="row">
+                            <div class="col-4">
+                                <small><strong>HR:</strong> ${patient.latest_vitals.heart_rate} bpm</small>
+                            </div>
+                            <div class="col-4">
+                                <small><strong>BP:</strong> ${patient.latest_vitals.blood_pressure}</small>
+                            </div>
+                            <div class="col-4">
+                                <small><strong>Temp:</strong> ${patient.latest_vitals.temperature}°C</small>
+                            </div>
+                        </div>
+                    ` : '<small class="text-muted">No recent vitals</small>'}
+                </div>
+            </div>
+        `).join('');
+        
+        document.getElementById('patientsList').innerHTML = patientsHtml || '<p class="text-muted">No patients assigned</p>';
+        
+        // Populate patient selects
+        const patientOptions = data.patients.map(patient => 
+            `<option value="${patient.id}">${patient.name}</option>`
+        ).join('');
+        
+        document.getElementById('patientSelect').innerHTML = '<option value="">Choose patient...</option>' + patientOptions;
+        document.getElementById('notePatientSelect').innerHTML = '<option value="">Choose patient...</option>' + patientOptions;
+        
+    } catch (error) {
+        console.error('Error loading doctor dashboard:', error);
+    }
+}
+
+// Load patient trends chart
+async function loadPatientTrendsChart() {
+    try {
+        const response = await apiRequest('/api/analytics/patient-trends');
+        const data = await response.json();
+        
+        if (data.chart) {
+            Plotly.newPlot('patientTrendsChart', data.chart.data, data.chart.layout, {responsive: true});
+        } else {
+            document.getElementById('patientTrendsChart').innerHTML = '<p class="text-muted">No data available for trends</p>';
+        }
+    } catch (error) {
+        console.error('Error loading trends chart:', error);
+        document.getElementById('patientTrendsChart').innerHTML = '<p class="text-muted">Error loading trends data</p>';
+    }
+}
+
+// Handle vitals form submission
+document.getElementById('vitalsForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const patientId = document.getElementById('patientSelect').value;
+    const heartRate = document.getElementById('heartRate').value;
+    const temperature = document.getElementById('temperature').value;
+    const systolicBP = document.getElementById('systolicBP').value;
+    const diastolicBP = document.getElementById('diastolicBP').value;
+    const weight = document.getElementById('weight').value;
+    const height = document.getElementById('height').value;
+    const glucose = document.getElementById('glucose').value;
+    
+    try {
+        const response = await apiRequest(`/api/patients/${patientId}/vitals`, {
+            method: 'POST',
+            body: JSON.stringify({
+                heart_rate: parseInt(heartRate),
+                temperature: parseFloat(temperature),
+                blood_pressure_systolic: parseInt(systolicBP),
+                blood_pressure_diastolic: parseInt(diastolicBP),
+                weight: parseFloat(weight),
+                height: parseFloat(height),
+                glucose_level: glucose ? parseFloat(glucose) : null
+            })
+        });
+        
+        if (response.ok) {
+            alert('Vital signs recorded successfully!');
+            document.getElementById('vitalsForm').reset();
+            loadDoctorDashboard(); // Refresh data
+        } else {
+            const error = await response.json();
+            alert('Error: ' + error.message);
+        }
+    } catch (error) {
+        console.error('Error recording vitals:', error);
+        alert('Error recording vital signs. Please try again.');
+    }
+});
+
+// Handle medical note form submission
+document.getElementById('medicalNoteForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const patientId = document.getElementById('notePatientSelect').value;
+    const diagnosis = document.getElementById('diagnosis').value;
+    const symptoms = document.getElementById('symptoms').value;
+    const treatment = document.getElementById('treatment').value;
+    const prescription = document.getElementById('prescription').value;
+    
+    try {
+        const response = await apiRequest(`/api/patients/${patientId}/medical-notes`, {
+            method: 'POST',
+            body: JSON.stringify({
+                diagnosis,
+                symptoms,
+                treatment,
+                prescription
+            })
+        });
+        
+        if (response.ok) {
+            alert('Medical note saved successfully!');
+            document.getElementById('medicalNoteForm').reset();
+        } else {
+            const error = await response.json();
+            alert('Error: ' + error.message);
+        }
+    } catch (error) {
+        console.error('Error saving medical note:', error);
+        alert('Error saving medical note. Please try again.');
+    }
+});
+
+// Initialize dashboard
+document.addEventListener('DOMContentLoaded', function() {
+    loadDoctorDashboard();
+    loadPatientTrendsChart();
+});
+</script>
+{% endblock %}

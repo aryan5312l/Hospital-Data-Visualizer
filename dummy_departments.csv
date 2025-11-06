@@ -1,0 +1,10 @@
+department,patient_count,avg_age,severity_distribution
+Cardiology,2,45,"{'Mild': 0, 'Moderate': 1, 'Severe': 1}"
+Neurology,1,42,"{'Mild': 1, 'Moderate': 0, 'Severe': 0}"
+Pediatrics,1,28,"{'Mild': 1, 'Moderate': 0, 'Severe': 0}"
+Orthopedics,1,31,"{'Mild': 0, 'Moderate': 1, 'Severe': 0}"
+Oncology,1,67,"{'Mild': 0, 'Moderate': 0, 'Severe': 1}"
+Dermatology,1,24,"{'Mild': 1, 'Moderate': 0, 'Severe': 0}"
+Gastroenterology,1,49,"{'Mild': 0, 'Moderate': 1, 'Severe': 0}"
+Endocrinology,1,33,"{'Mild': 0, 'Moderate': 1, 'Severe': 0}"
+Psychiatry,1,41,"{'Mild': 1, 'Moderate': 0, 'Severe': 0}"

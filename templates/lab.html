@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+
+{% block title %}Lab Technician Dashboard - Hospital Management System{% endblock %}
+{% block page_title %}Lab Technician Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-flask"></i> Lab Technician Information</h5>
+            </div>
+            <div class="card-body">
+                <div id="labTechInfo">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-plus"></i> Add Lab Report</h5>
+            </div>
+            <div class="card-body">
+                <form id="labReportForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="patientSelect" class="form-label">Select Patient</label>
+                                <select class="form-select" id="patientSelect" required>
+                                    <option value="">Choose patient...</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="testName" class="form-label">Test Name</label>
+                                <input type="text" class="form-control" id="testName" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="testType" class="form-label">Test Type</label>
+                                <select class="form-select" id="testType" required>
+                                    <option value="">Choose test type...</option>
+                                    <option value="Blood Test">Blood Test</option>
+                                    <option value="Urine Test">Urine Test</option>
+                                    <option value="X-Ray">X-Ray</option>
+                                    <option value="MRI">MRI</option>
+                                    <option value="CT Scan">CT Scan</option>
+                                    <option value="Ultrasound">Ultrasound</option>
+                                    <option value="ECG">ECG</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="resultValue" class="form-label">Result Value</label>
+                                <input type="number" step="0.01" class="form-control" id="resultValue" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="normalRange" class="form-label">Normal Range</label>
+                                <input type="text" class="form-control" id="normalRange" placeholder="e.g., 10-100" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="status" class="form-label">Status</label>
+                                <select class="form-select" id="status" required>
+                                    <option value="normal">Normal</option>
+                                    <option value="abnormal">Abnormal</option>
+                                    <option value="critical">Critical</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes" rows="3" placeholder="Additional notes about the test results..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Lab Report
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-bar"></i> Lab Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div id="labStats">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-list"></i> Recent Lab Reports</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Patient</th>
+                                <th>Test Name</th>
+                                <th>Result</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentReports">
+                            <tr>
+                                <td colspan="5" class="text-center">
+                                    <div class="spinner-border" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Load lab technician dashboard data
+async function loadLabDashboard() {
+    try {
+        // Load patients for dropdown
+        const patientsResponse = await apiRequest('/api/patients');
+        const patients = await patientsResponse.json();
+        
+        const patientOptions = patients.map(patient => 
+            `<option value="${patient.id}">${patient.name}</option>`
+        ).join('');
+        
+        document.getElementById('patientSelect').innerHTML = '<option value="">Choose patient...</option>' + patientOptions;
+        
+        // Load lab statistics (mock data for now)
+        document.getElementById('labStats').innerHTML = `
+            <div class="row text-center">
+                <div class="col-6">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h5 class="text-primary">24</h5>
+                            <small>Tests Today</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h5 class="text-success">18</h5>
+                            <small>Normal Results</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row text-center mt-3">
+                <div class="col-6">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h5 class="text-warning">5</h5>
+                            <small>Abnormal Results</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h5 class="text-danger">1</h5>
+                            <small>Critical Results</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Load recent reports (mock data for now)
+        const recentReportsHtml = `
+            <tr>
+                <td>Alice Johnson</td>
+                <td>Blood Test</td>
+                <td>85.5</td>
+                <td><span class="badge bg-success">Normal</span></td>
+                <td>${new Date().toLocaleDateString()}</td>
+            </tr>
+            <tr>
+                <td>Bob Williams</td>
+                <td>X-Ray</td>
+                <td>Normal</td>
+                <td><span class="badge bg-success">Normal</span></td>
+                <td>${new Date().toLocaleDateString()}</td>
+            </tr>
+            <tr>
+                <td>Alice Johnson</td>
+                <td>Urine Test</td>
+                <td>120.3</td>
+                <td><span class="badge bg-warning">Abnormal</span></td>
+                <td>${new Date().toLocaleDateString()}</td>
+            </tr>
+        `;
+        
+        document.getElementById('recentReports').innerHTML = recentReportsHtml;
+        
+    } catch (error) {
+        console.error('Error loading lab dashboard:', error);
+    }
+}
+
+// Handle lab report form submission
+document.getElementById('labReportForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const patientId = document.getElementById('patientSelect').value;
+    const testName = document.getElementById('testName').value;
+    const testType = document.getElementById('testType').value;
+    const resultValue = document.getElementById('resultValue').value;
+    const normalRange = document.getElementById('normalRange').value;
+    const status = document.getElementById('status').value;
+    const notes = document.getElementById('notes').value;
+    
+    try {
+        const response = await apiRequest(`/api/patients/${patientId}/lab-reports`, {
+            method: 'POST',
+            body: JSON.stringify({
+                test_name: testName,
+                test_type: testType,
+                result_value: parseFloat(resultValue),
+                normal_range: normalRange,
+                status: status,
+                notes: notes
+            })
+        });
+        
+        if (response.ok) {
+            alert('Lab report saved successfully!');
+            document.getElementById('labReportForm').reset();
+            loadLabDashboard(); // Refresh data
+        } else {
+            const error = await response.json();
+            alert('Error: ' + error.message);
+        }
+    } catch (error) {
+        console.error('Error saving lab report:', error);
+        alert('Error saving lab report. Please try again.');
+    }
+});
+
+// Initialize dashboard
+document.addEventListener('DOMContentLoaded', function() {
+    loadLabDashboard();
+});
+</script>
+{% endblock %}
