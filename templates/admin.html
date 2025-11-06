@@ -81,11 +81,6 @@
                             Monthly Admissions
                         </button>
                     </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="lab-tab" data-bs-toggle="tab" data-bs-target="#lab" type="button" role="tab">
-                            Lab Analysis
-                        </button>
-                    </li>
                 </ul>
                 <div class="tab-content" id="analyticsTabContent">
                     <div class="tab-pane fade show active" id="trends" role="tabpanel">
@@ -105,9 +100,6 @@
                     </div>
                     <div class="tab-pane fade" id="admissions" role="tabpanel">
                         <div id="admissionsChart" class="chart-container mt-3"></div>
-                    </div>
-                    <div class="tab-pane fade" id="lab" role="tabpanel">
-                        <div id="labChart" class="chart-container mt-3"></div>
                     </div>
                 </div>
             </div>
@@ -296,29 +288,67 @@ async function handleAssign() {
 // Load analytics charts
 async function loadTrendsChart() {
     try {
+        const trendsChartElement = document.getElementById('trendsChart');
+        if (!trendsChartElement) {
+            console.error('trendsChart element not found');
+            return;
+        }
+        
         const response = await apiRequest('/api/analytics/patient-trends');
+        
+        if (!response || !response.ok) {
+            console.error('Failed to load trends chart, status:', response?.status);
+            trendsChartElement.innerHTML = '<p class="text-muted">No data available for trends</p>';
+            return;
+        }
+        
         const data = await response.json();
         
-        if (data.chart) {
+        if (data.chart && data.chart.data && data.chart.layout) {
             Plotly.newPlot('trendsChart', data.chart.data, data.chart.layout, {responsive: true});
+        } else {
+            console.error('Invalid chart data:', data);
+            trendsChartElement.innerHTML = '<p class="text-muted">No data available for trends</p>';
         }
     } catch (error) {
         console.error('Error loading trends chart:', error);
-        document.getElementById('trendsChart').innerHTML = '<p class="text-muted">No data available for trends</p>';
+        const trendsChartElement = document.getElementById('trendsChart');
+        if (trendsChartElement) {
+            trendsChartElement.innerHTML = '<p class="text-muted">Error loading trends chart. Please try again.</p>';
+        }
     }
 }
 
 async function loadDiseasesChart() {
     try {
+        const diseasesChartElement = document.getElementById('diseasesChart');
+        if (!diseasesChartElement) {
+            console.error('diseasesChart element not found');
+            return;
+        }
+        
         const response = await apiRequest('/api/analytics/disease-distribution');
+        
+        if (!response || !response.ok) {
+            console.error('Failed to load diseases chart, status:', response?.status);
+            diseasesChartElement.innerHTML = '<p class="text-muted">No data available for disease distribution</p>';
+            return;
+        }
+        
         const data = await response.json();
         
-        if (data.chart) {
+        if (data.chart && data.chart.data && data.chart.layout) {
             Plotly.newPlot('diseasesChart', data.chart.data, data.chart.layout, {responsive: true});
+        } else {
+            console.error('Invalid chart data:', data);
+            diseasesChartElement.innerHTML = '<p class="text-muted">No data available for disease distribution</p>';
         }
     } catch (error) {
         console.error('Error loading diseases chart:', error);
-        document.getElementById('diseasesChart').innerHTML = '<p class="text-muted">No data available for disease distribution</p>';
+        const diseasesChartElement = document.getElementById('diseasesChart');
+        if (diseasesChartElement) {
+            diseasesChartElement.innerHTML = '<p class="text-muted">Error loading disease distribution chart. Please try again.</p>';
+        }
     }
 }
 
@@ -379,61 +409,6 @@ async function loadAdmissionsChart() {
     }
 }
 
-async function loadLabChart() {
-    try {
-        const response = await apiRequest('/api/analytics/lab-results-analysis');
-        const data = await response.json();
-        
-        if (data.chart) {
-            Plotly.newPlot('labChart', data.chart.data, data.chart.layout, {responsive: true});
-        }
-        
-        // Display lab summary if available
-        if (data.summary) {
-            const summaryHtml = `
-                <div class="row mt-3">
-                    <div class="col-md-3">
-                        <div class="card bg-light">
-                            <div class="card-body text-center">
-                                <h5 class="text-primary">${data.summary.total_tests}</h5>
-                                <small>Total Tests</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card bg-light">
-                            <div class="card-body text-center">
-                                <h5 class="text-success">${data.summary.normal_results}</h5>
-                                <small>Normal Results</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card bg-light">
-                            <div class="card-body text-center">
-                                <h5 class="text-warning">${data.summary.abnormal_results}</h5>
-                                <small>Abnormal Results</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card bg-light">
-                            <div class="card-body text-center">
-                                <h5 class="text-danger">${data.summary.critical_results}</h5>
-                                <small>Critical Results</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            document.getElementById('labChart').innerHTML += summaryHtml;
-        }
-    } catch (error) {
-        console.error('Error loading lab chart:', error);
-        document.getElementById('labChart').innerHTML = '<p class="text-muted">No data available for lab analysis</p>';
-    }
-}
-
 // Tab change handlers
 document.getElementById('trends-tab').addEventListener('click', loadTrendsChart);
 document.getElementById('diseases-tab').addEventListener('click', loadDiseasesChart);
@@ -441,7 +416,6 @@ document.getElementById('departments-tab').addEventListener('click', loadDepartm
 document.getElementById('age-tab').addEventListener('click', loadAgeChart);
 document.getElementById('gender-tab').addEventListener('click', loadGenderChart);
 document.getElementById('admissions-tab').addEventListener('click', loadAdmissionsChart);
-document.getElementById('lab-tab').addEventListener('click', loadLabChart);
 
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', function() {

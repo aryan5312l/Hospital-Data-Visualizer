@@ -34,6 +34,27 @@ jwt = JWTManager(app)
 bcrypt = Bcrypt(app)
 CORS(app)
 
+# JWT error handlers
+@jwt.expired_token_loader
+def expired_token_callback(jwt_header, jwt_payload):
+    print("JWT Token expired")
+    return jsonify({'message': 'Token has expired', 'error': 'expired'}), 401
+
+@jwt.invalid_token_loader
+def invalid_token_callback(error):
+    print(f"JWT Invalid token: {error}")
+    return jsonify({'message': 'Invalid token', 'error': 'invalid'}), 401
+
+@jwt.unauthorized_loader
+def missing_token_callback(error):
+    print(f"JWT Missing token: {error}")
+    return jsonify({'message': 'Authorization token is missing', 'error': 'missing'}), 401
+
+@jwt.needs_fresh_token_loader
+def token_not_fresh_callback(jwt_header, jwt_payload):
+    print("JWT Token not fresh")
+    return jsonify({'message': 'Token is not fresh', 'error': 'not_fresh'}), 401
+
 # Public endpoints (no auth)
 @app.route('/api/public/doctors', methods=['GET'])
 def public_doctors():
@@ -88,6 +109,7 @@ class Patient(db.Model):
     address = db.Column(db.Text, nullable=False)
     emergency_contact = db.Column(db.String(100), nullable=False)
     medical_history = db.Column(db.Text)
+    admission_date = db.Column(db.Date, nullable=True)
     
     # Relationships
     appointments = db.relationship('Appointment', backref='patient')
@@ -153,19 +175,36 @@ def role_required(roles):
         @wraps(f)
         def decorated_function(*args, **kwargs):
             try:
+                # Check Authorization header
+                auth_header = request.headers.get('Authorization', '')
+                print(f"Authorization header: {auth_header[:50]}..." if len(auth_header) > 50 else f"Authorization header: {auth_header}")
+                
                 current_user_id = get_jwt_identity()
                 if not current_user_id:
+                    print("Role check: No user ID from token")
                     return jsonify({'message': 'No token provided'}), 401
                 
-                user = User.query.get(int(current_user_id))
+                try:
+                    user_id = int(current_user_id)
+                except (ValueError, TypeError) as e:
+                    print(f"Role check: Invalid user ID format: {current_user_id}, error: {e}")
+                    return jsonify({'message': 'Invalid user ID in token'}), 401
+                
+                user = User.query.get(user_id)
                 if not user:
+                    print(f"Role check: User not found for ID: {user_id}")
                     return jsonify({'message': 'User not found'}), 404
                 
                 if user.role not in roles:
+                    print(f"Role check: Access denied. User role: {user.role}, Required: {roles}")
                     return jsonify({'message': 'Access denied'}), 403
                 
+                print(f"Role check: Access granted for user {user.username} with role {user.role}")
                 return f(*args, **kwargs)
             except Exception as e:
+                import traceback
+                print(f"Role check error: {str(e)}")
+                print(traceback.format_exc())
                 return jsonify({'message': f'Authentication error: {str(e)}'}), 401
         return decorated_function
     return decorator
@@ -235,10 +274,24 @@ def register():
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.get_json()
-    user = User.query.filter_by(username=data['username']).first()
     
-    if user and bcrypt.check_password_hash(user.password_hash, data['password']):
+    if not data or 'username' not in data or 'password' not in data:
+        return jsonify({'message': 'Username and password are required'}), 400
+    
+    username = data['username']
+    password = data['password']
+    
+    # Find user by username
+    user = User.query.filter_by(username=username).first()
+    
+    if not user:
+        print(f"Login attempt failed: User '{username}' not found")
+        return jsonify({'message': 'Invalid credentials'}), 401
+    
+    # Check password
+    if bcrypt.check_password_hash(user.password_hash, password):
         access_token = create_access_token(identity=str(user.id))
+        print(f"Login successful: {username} (role: {user.role})")
         return jsonify({
             'access_token': access_token,
             'user': {
@@ -247,8 +300,9 @@ def login():
                 'role': user.role
             }
         }), 200
-    
-    return jsonify({'message': 'Invalid credentials'}), 401
+    else:
+        print(f"Login attempt failed: Invalid password for user '{username}'")
+        return jsonify({'message': 'Invalid credentials'}), 401
 
 # Dashboard routes
 @app.route('/api/dashboard/admin', methods=['GET'])
@@ -423,7 +477,7 @@ def patient_trends():
         'systolic_bp': vital.blood_pressure_systolic,
         'diastolic_bp': vital.blood_pressure_diastolic,
         'temperature': vital.temperature,
-        'glucose': vital.glucose_level
+        'glucose': vital.glucose_level if vital.glucose_level is not None else 0
     } for vital, patient in vitals_data])
     
     # Create Plotly visualization
@@ -447,14 +501,15 @@ def patient_trends():
         line=dict(color='blue')
     ))
     
-    # Add glucose trend
-    fig.add_trace(go.Scatter(
-        x=df['date'],
-        y=df['glucose'],
-        mode='lines+markers',
-        name='Glucose Level',
-        line=dict(color='green')
-    ))
+    # Add glucose trend (only if there's glucose data)
+    if df['glucose'].notna().any() and (df['glucose'] > 0).any():
+        fig.add_trace(go.Scatter(
+            x=df['date'],
+            y=df['glucose'],
+            mode='lines+markers',
+            name='Glucose Level',
+            line=dict(color='green')
+        ))
     
     fig.update_layout(
         title='Patient Health Trends Over Time',
@@ -648,7 +703,7 @@ def lab_results_analysis():
 @jwt_required()
 @role_required(['admin'])
 def monthly_admissions():
-    # Get patient admission data (using created_at as proxy for admission)
+    # Get patient admission data (using admission_date if available, otherwise created_at)
     patients = Patient.query.all()
     
     if not patients:
@@ -657,7 +712,11 @@ def monthly_admissions():
     # Group by month
     monthly_data = {}
     for patient in patients:
-        month_key = patient.user.created_at.strftime('%Y-%m')
+        # Use admission_date if available, otherwise fall back to user.created_at
+        if patient.admission_date:
+            month_key = patient.admission_date.strftime('%Y-%m')
+        else:
+            month_key = patient.user.created_at.strftime('%Y-%m')
         if month_key not in monthly_data:
             monthly_data[month_key] = 0
         monthly_data[month_key] += 1
@@ -836,6 +895,17 @@ def import_patients_from_csv(csv_path: str) -> int:
             db.session.flush()
 
             doctor = _find_doctor_for_department(department)
+            
+            # Parse admission_date from CSV if available
+            admission_date = None
+            admission_date_str = row.get('admission_date', '').strip()
+            if admission_date_str:
+                try:
+                    admission_date = datetime.strptime(admission_date_str, '%Y-%m-%d').date()
+                except (ValueError, TypeError):
+                    # If parsing fails, use None (will default to user.created_at date)
+                    pass
+            
             patient = Patient(
                 user_id=user.id,
                 doctor_id=doctor.id if doctor else None,
@@ -845,7 +915,8 @@ def import_patients_from_csv(csv_path: str) -> int:
                 gender=gender,
                 phone=f"555-{random.randint(1000,9999)}",
                 address=row.get('address') or 'N/A',
-                emergency_contact=row.get('emergency_contact') or 'N/A'
+                emergency_contact=row.get('emergency_contact') or 'N/A',
+                admission_date=admission_date
             )
             db.session.add(patient)
             imported += 1
@@ -1254,7 +1325,83 @@ def signup_page():
 
 if __name__ == '__main__':
     with app.app_context():
+        # Create all tables (this will add new columns if they don't exist in SQLite)
         db.create_all()
-        if User.query.count() == 0:
+        
+        # Try to add admission_date column if it doesn't exist (for existing databases)
+        try:
+            from sqlalchemy import inspect, text
+            inspector = inspect(db.engine)
+            columns = [col['name'] for col in inspector.get_columns('patient')]
+            if 'admission_date' not in columns:
+                print("Adding admission_date column to Patient table...")
+                with db.engine.connect() as conn:
+                    conn.execute(text('ALTER TABLE patient ADD COLUMN admission_date DATE'))
+                    conn.commit()
+                print("✅ admission_date column added")
+        except Exception as e:
+            print(f"Note: Could not add admission_date column automatically: {e}")
+            print("You may need to run migrate_db.py or recreate the database")
+        
+        # Always ensure demo accounts exist
+        ensure_admin_user()
+        
+        # Ensure demo doctor account exists
+        if not User.query.filter_by(username='dr_smith', role='doctor').first():
+            print("Creating demo doctor account...")
+            doctor_user = User(
+                username='dr_smith',
+                email='dr.smith@hospital.com',
+                password_hash=bcrypt.generate_password_hash('doctor123').decode('utf-8'),
+                role='doctor'
+            )
+            db.session.add(doctor_user)
+            db.session.commit()
+            
+            doctor = Doctor(
+                user_id=doctor_user.id,
+                first_name='John',
+                last_name='Smith',
+                specialization='Cardiology',
+                department='Cardiology',
+                phone='555-0101',
+                license_number='MD123456'
+            )
+            db.session.add(doctor)
+            db.session.commit()
+            print("✅ Demo doctor account created")
+        
+        # Ensure demo patient accounts exist
+        if not User.query.filter_by(username='patient1', role='patient').first():
+            print("Creating demo patient accounts...")
+            doctor = Doctor.query.first()
+            
+            # Create patient1
+            patient1_user = User(
+                username='patient1',
+                email='patient1@email.com',
+                password_hash=bcrypt.generate_password_hash('patient123').decode('utf-8'),
+                role='patient'
+            )
+            db.session.add(patient1_user)
+            db.session.commit()
+            
+            patient1 = Patient(
+                user_id=patient1_user.id,
+                doctor_id=doctor.id if doctor else None,
+                first_name='Alice',
+                last_name='Johnson',
+                date_of_birth=datetime.strptime('1985-03-15', '%Y-%m-%d').date(),
+                gender='Female',
+                phone='555-0201',
+                address='123 Main St',
+                emergency_contact='Bob Johnson - 555-0202'
+            )
+            db.session.add(patient1)
+            db.session.commit()
+            print("✅ Demo patient accounts created")
+        
+        # Create sample data if database is empty (only admin)
+        if User.query.count() == 1:
             create_sample_data()
     app.run(debug=True)

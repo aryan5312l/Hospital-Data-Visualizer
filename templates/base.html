@@ -164,23 +164,52 @@
             window.location.href = '/';
         }
         
-        // API request helper
+        // API request helper - reads token fresh each time
         async function apiRequest(url, options = {}) {
+            // Get token fresh from localStorage each time
+            const currentToken = localStorage.getItem('token');
+            
+            if (!currentToken) {
+                console.error('No token found in apiRequest for:', url);
+                logout();
+                return Promise.reject(new Error('No authentication token'));
+            }
+            
             const defaultOptions = {
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${currentToken}`
                 }
             };
             
-            const response = await fetch(url, { ...defaultOptions, ...options });
+            // Merge headers properly
+            const mergedOptions = {
+                ...defaultOptions,
+                ...options,
+                headers: {
+                    ...defaultOptions.headers,
+                    ...(options.headers || {})
+                }
+            };
             
-            if (response.status === 401) {
-                logout();
-                return;
+            try {
+                console.log('Making API request to:', url);
+                const response = await fetch(url, mergedOptions);
+                console.log('API response status:', response.status, 'for:', url);
+                
+                if (response.status === 401) {
+                    console.error('Unauthorized response (401) for:', url);
+                    const errorData = await response.json().catch(() => ({ message: 'Unauthorized' }));
+                    console.error('Error details:', errorData);
+                    logout();
+                    return response;
+                }
+                
+                return response;
+            } catch (error) {
+                console.error('API request error for', url, ':', error);
+                throw error;
             }
-            
-            return response;
         }
     </script>
     {% block scripts %}{% endblock %}

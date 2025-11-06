@@ -1,14 +1,31 @@
 id,name,age,gender,department,admission_date,diagnosis,severity
-1,Aarav Sharma,29,Male,Cardiology,2025-09-05,Hypertension,Moderate
-2,Isha Verma,35,Female,Neurology,2025-09-07,Migraine,Mild
-3,Vedant Patel,42,Male,Orthopedics,2025-09-10,Fracture,Moderate
-4,Diya Iyer,31,Female,Oncology,2025-09-12,Cancer,Severe
-5,Aditya Gupta,37,Male,Dermatology,2025-09-13,Skin Allergy,Mild
-6,Ananya Rao,26,Female,Endocrinology,2025-09-14,Diabetes,Moderate
-7,Rohit Kapoor,48,Male,Gastroenterology,2025-09-16,Acid Reflux,Moderate
-8,Meera Nair,22,Female,Pediatrics,2025-09-18,Common Cold,Mild
-9,Arjun Singh,33,Male,Cardiology,2025-09-19,Arrhythmia,Moderate
-10,Kavya Desai,40,Female,Psychiatry,2025-09-20,Anxiety,Mild
-11,Pranav Mehta,55,Male,Orthopedics,2025-09-22,Arthritis,Severe
-12,Sneha Joshi,30,Female,Endocrinology,2025-09-24,Thyroid Disorder,Moderate
-
+1,Aarav Sharma,29,Male,Cardiology,2024-03-05,Hypertension,Moderate
+2,Isha Verma,35,Female,Neurology,2024-03-15,Migraine,Mild
+3,Vedant Patel,42,Male,Orthopedics,2024-04-10,Fracture,Moderate
+4,Diya Iyer,31,Female,Oncology,2024-04-20,Cancer,Severe
+5,Aditya Gupta,37,Male,Dermatology,2024-05-13,Skin Allergy,Mild
+6,Ananya Rao,26,Female,Endocrinology,2024-05-25,Diabetes,Moderate
+7,Rohit Kapoor,48,Male,Gastroenterology,2024-06-16,Acid Reflux,Moderate
+8,Meera Nair,22,Female,Pediatrics,2024-06-28,Common Cold,Mild
+9,Arjun Singh,33,Male,Cardiology,2024-07-19,Arrhythmia,Moderate
+10,Kavya Desai,40,Female,Psychiatry,2024-07-30,Anxiety,Mild
+11,Pranav Mehta,55,Male,Orthopedics,2024-08-12,Arthritis,Severe
+12,Sneha Joshi,30,Female,Endocrinology,2024-08-24,Thyroid Disorder,Moderate
+13,Rajesh Kumar,45,Male,Cardiology,2024-03-25,Heart Disease,Severe
+14,Priya Patel,28,Female,Neurology,2024-04-05,Epilepsy,Moderate
+15,Manish Shah,52,Male,Gastroenterology,2024-05-15,Ulcer,Moderate
+16,Sunita Reddy,38,Female,Dermatology,2024-06-05,Eczema,Mild
+17,Vikram Malhotra,41,Male,Orthopedics,2024-07-10,Back Pain,Moderate
+18,Neha Agarwal,29,Female,Endocrinology,2024-08-20,Diabetes Type 2,Moderate
+19,Suresh Iyer,60,Male,Cardiology,2024-03-10,Hypertension,Severe
+20,Deepika Nair,34,Female,Psychiatry,2024-04-25,Depression,Mild
+21,Ramesh Gupta,47,Male,Oncology,2024-05-20,Cancer Treatment,Severe
+22,Anjali Desai,25,Female,Pediatrics,2024-06-15,Fever,Mild
+23,Kiran Joshi,39,Male,Gastroenterology,2024-07-25,Gastritis,Moderate
+24,Swati Rao,32,Female,Neurology,2024-08-10,Headache,Mild
+25,Amit Verma,44,Male,Cardiology,2024-03-20,Angina,Moderate
+26,Shreya Patel,27,Female,Dermatology,2024-04-15,Psoriasis,Mild
+27,Nikhil Mehta,50,Male,Orthopedics,2024-05-30,Knee Injury,Moderate
+28,Radha Sharma,36,Female,Endocrinology,2024-06-20,Thyroid,Moderate
+29,Siddharth Kapoor,43,Male,Psychiatry,2024-07-15,Stress,Mild
+30,Pooja Iyer,31,Female,Oncology,2024-08-05,Cancer Screening,Moderate
