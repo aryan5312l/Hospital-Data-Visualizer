@@ -32,31 +32,54 @@ Secure, role-based hospital management with interactive analytics (Plotly), data
 - Python 3.10+
 - pip (Python package manager)
 
-### Installation
+### Quick Setup (Automated)
 
-1. **Clone or download the project**
+**For a complete automated setup with all data:**
+
+```bash
+# 1. Install dependencies
+pip install -r requirements.txt
+
+# 2. Run the complete setup script
+python setup_complete.py
+```
+
+This will:
+- ✅ Generate all CSV data files
+- ✅ Import 1,200+ patients
+- ✅ Create vital signs and medical notes for charts
+- ✅ Verify all data is imported
+
+### Manual Setup
+
+**For step-by-step instructions, see [SETUP.md](SETUP.md)**
+
+Quick manual steps:
+
+1. **Install dependencies**
    ```bash
-   # If you have git
-   git clone <repository-url>
-   cd hospital-management-system
+   pip install -r requirements.txt
    ```
 
-2. **Create venv and install dependencies (Windows PowerShell)**
-   ```powershell
-   python -m venv hospital_env
-   ./hospital_env/Scripts/Activate.ps1
-   pip install Flask Flask-SQLAlchemy Flask-JWT-Extended Flask-CORS Flask-Bcrypt
-   pip install pandas numpy matplotlib seaborn plotly python-dotenv
+2. **Generate CSV data**
+   ```bash
+   python sample_data.py
    ```
 
-3. **Run the application**
-   ```powershell
+3. **Import patients and populate chart data**
+   ```bash
+   python reimport_all_patients.py
+   python populate_chart_data.py
+   ```
+
+4. **Run the application**
+   ```bash
    python run.py
    ```
 
-4. **Access the application**
+5. **Access the application**
    - Open your browser and go to `http://localhost:5000`
-   - The application will automatically create sample data on first run
+   - Login with demo accounts (see below)
 
 ### Demo Accounts
 

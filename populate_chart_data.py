@@ -171,3 +171,4 @@ with app.app_context():
     print("\n✅ Charts should now display data!")
 
 
+

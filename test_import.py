@@ -26,3 +26,4 @@ with app.app_context():
     print(f"Total patients now: {new_count}")
 
 
+
