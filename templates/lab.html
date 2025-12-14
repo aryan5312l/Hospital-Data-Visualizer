@@ -115,6 +115,22 @@
                 </div>
             </div>
         </div>
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5><i class="fas fa-file-upload"></i> Upload Lab Reports CSV</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <input type="file" class="form-control" id="labCsvFile" accept=".csv">
+                </div>
+                <button type="button" class="btn btn-outline-primary w-100" id="uploadLabCsvBtn">
+                    <i class="fas fa-cloud-upload-alt"></i> Upload CSV
+                </button>
+                <small class="text-muted d-block mt-2">
+                    Include columns such as patient_name, test_name, test_type, result_value, normal_range, status, notes.
+                </small>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -158,6 +174,24 @@
 // Load lab technician dashboard data
 async function loadLabDashboard() {
     try {
+        // Load lab tech dashboard data
+        const dashboardResponse = await apiRequest('/api/dashboard/lab');
+        const dashboardData = await dashboardResponse.json();
+        
+        // Update lab tech info
+        document.getElementById('labTechInfo').innerHTML = `
+            <div class="row">
+                <div class="col-md-8">
+                    <h4>${dashboardData.lab_tech.name}</h4>
+                    <p class="text-muted mb-1"><strong>Department:</strong> ${dashboardData.lab_tech.department}</p>
+                    <p class="text-muted mb-0"><strong>Certification:</strong> ${dashboardData.lab_tech.certification}</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <span class="badge bg-primary fs-6">Lab Technician</span>
+                </div>
+            </div>
+        `;
+        
         // Load patients for dropdown
         const patientsResponse = await apiRequest('/api/patients');
         const patients = await patientsResponse.json();
@@ -168,13 +202,14 @@ async function loadLabDashboard() {
         
         document.getElementById('patientSelect').innerHTML = '<option value="">Choose patient...</option>' + patientOptions;
         
-        // Load lab statistics (mock data for now)
+        // Update lab statistics with real data
+        const stats = dashboardData.statistics;
         document.getElementById('labStats').innerHTML = `
             <div class="row text-center">
                 <div class="col-6">
                     <div class="card bg-light">
                         <div class="card-body">
-                            <h5 class="text-primary">24</h5>
+                            <h5 class="text-primary">${stats.today_reports}</h5>
                             <small>Tests Today</small>
                         </div>
                     </div>
@@ -182,7 +217,7 @@ async function loadLabDashboard() {
                 <div class="col-6">
                     <div class="card bg-light">
                         <div class="card-body">
-                            <h5 class="text-success">18</h5>
+                            <h5 class="text-success">${stats.normal_results}</h5>
                             <small>Normal Results</small>
                         </div>
                     </div>
@@ -192,7 +227,7 @@ async function loadLabDashboard() {
                 <div class="col-6">
                     <div class="card bg-light">
                         <div class="card-body">
-                            <h5 class="text-warning">5</h5>
+                            <h5 class="text-warning">${stats.abnormal_results}</h5>
                             <small>Abnormal Results</small>
                         </div>
                     </div>
@@ -200,7 +235,7 @@ async function loadLabDashboard() {
                 <div class="col-6">
                     <div class="card bg-light">
                         <div class="card-body">
-                            <h5 class="text-danger">1</h5>
+                            <h5 class="text-danger">${stats.critical_results}</h5>
                             <small>Critical Results</small>
                         </div>
                     </div>
@@ -208,35 +243,36 @@ async function loadLabDashboard() {
             </div>
         `;
         
-        // Load recent reports (mock data for now)
-        const recentReportsHtml = `
-            <tr>
-                <td>Alice Johnson</td>
-                <td>Blood Test</td>
-                <td>85.5</td>
-                <td><span class="badge bg-success">Normal</span></td>
-                <td>${new Date().toLocaleDateString()}</td>
-            </tr>
-            <tr>
-                <td>Bob Williams</td>
-                <td>X-Ray</td>
-                <td>Normal</td>
-                <td><span class="badge bg-success">Normal</span></td>
-                <td>${new Date().toLocaleDateString()}</td>
-            </tr>
-            <tr>
-                <td>Alice Johnson</td>
-                <td>Urine Test</td>
-                <td>120.3</td>
-                <td><span class="badge bg-warning">Abnormal</span></td>
-                <td>${new Date().toLocaleDateString()}</td>
-            </tr>
-        `;
-        
-        document.getElementById('recentReports').innerHTML = recentReportsHtml;
+        // Load recent reports with real data
+        const recentReports = dashboardData.recent_reports;
+        if (recentReports.length > 0) {
+            const recentReportsHtml = recentReports.map(report => {
+                const statusClass = report.status === 'normal' ? 'success' : 
+                                   report.status === 'abnormal' ? 'warning' : 'danger';
+                return `
+                    <tr>
+                        <td>${report.patient_name}</td>
+                        <td>${report.test_name}</td>
+                        <td>${report.result}</td>
+                        <td><span class="badge bg-${statusClass}">${report.status}</span></td>
+                        <td>${new Date(report.date).toLocaleDateString()}</td>
+                    </tr>
+                `;
+            }).join('');
+            document.getElementById('recentReports').innerHTML = recentReportsHtml;
+        } else {
+            document.getElementById('recentReports').innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center text-muted">No lab reports found</td>
+                </tr>
+            `;
+        }
         
     } catch (error) {
         console.error('Error loading lab dashboard:', error);
+        document.getElementById('labTechInfo').innerHTML = '<p class="text-danger">Error loading lab technician information</p>';
+        document.getElementById('labStats').innerHTML = '<p class="text-muted">Error loading statistics</p>';
+        document.getElementById('recentReports').innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error loading reports</td></tr>';
     }
 }
 
@@ -279,9 +315,53 @@ document.getElementById('labReportForm').addEventListener('submit', async functi
     }
 });
 
+async function uploadLabCsv() {
+    const fileInput = document.getElementById('labCsvFile');
+    if (!fileInput || fileInput.files.length === 0) {
+        alert('Please select a CSV file to upload.');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+    
+    const token = localStorage.getItem('token');
+    if (!token) {
+        alert('Authentication token missing. Please sign in again.');
+        logout();
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/lab-reports/upload', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: formData
+        });
+        const result = await response.json().catch(() => ({}));
+        
+        if (response.ok) {
+            alert(`CSV uploaded successfully. ${result.imported || 0} lab reports added.`);
+            fileInput.value = '';
+            loadLabDashboard();
+        } else {
+            alert(result.message || 'Failed to upload CSV. Please check the file format.');
+        }
+    } catch (error) {
+        console.error('Error uploading lab CSV:', error);
+        alert('An error occurred while uploading the CSV. Please try again.');
+    }
+}
+
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', function() {
     loadLabDashboard();
+    const uploadBtn = document.getElementById('uploadLabCsvBtn');
+    if (uploadBtn) {
+        uploadBtn.addEventListener('click', uploadLabCsv);
+    }
 });
 </script>
 {% endblock %}

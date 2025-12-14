@@ -18,6 +18,7 @@ from functools import wraps
 import random
 from datetime import date, timedelta
 import csv
+import io
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-change-in-production'
@@ -393,6 +394,59 @@ def doctor_dashboard():
         'patients': patient_data
     })
 
+@app.route('/api/dashboard/lab', methods=['GET'])
+@jwt_required()
+@role_required(['lab_tech'])
+def lab_dashboard():
+    current_user_id = get_jwt_identity()
+    lab_tech = LabTechnician.query.filter_by(user_id=int(current_user_id)).first()
+    
+    if not lab_tech:
+        return jsonify({'message': 'Lab technician profile not found'}), 404
+    
+    # Get lab statistics
+    total_reports = LabReport.query.count()
+    today = datetime.utcnow().date()
+    today_reports = LabReport.query.filter(
+        db.func.date(LabReport.created_at) == today
+    ).count()
+    
+    normal_reports = LabReport.query.filter_by(status='normal').count()
+    abnormal_reports = LabReport.query.filter_by(status='abnormal').count()
+    critical_reports = LabReport.query.filter_by(status='critical').count()
+    
+    # Get recent lab reports
+    recent_reports = db.session.query(LabReport, Patient).join(
+        Patient, LabReport.patient_id == Patient.id
+    ).order_by(LabReport.created_at.desc()).limit(10).all()
+    
+    reports_data = []
+    for report, patient in recent_reports:
+        reports_data.append({
+            'id': report.id,
+            'patient_name': f"{patient.first_name} {patient.last_name}",
+            'test_name': report.test_name,
+            'result': report.result_value,
+            'status': report.status,
+            'date': report.created_at.isoformat()
+        })
+    
+    return jsonify({
+        'lab_tech': {
+            'name': f"{lab_tech.first_name} {lab_tech.last_name}",
+            'department': lab_tech.department,
+            'certification': lab_tech.certification
+        },
+        'statistics': {
+            'total_reports': total_reports,
+            'today_reports': today_reports,
+            'normal_results': normal_reports,
+            'abnormal_results': abnormal_reports,
+            'critical_results': critical_reports
+        },
+        'recent_reports': reports_data
+    })
+
 @app.route('/api/dashboard/patient', methods=['GET'])
 @jwt_required()
 @role_required(['patient'])
@@ -429,7 +483,9 @@ def patient_dashboard():
         },
         'medical_notes': [{
             'diagnosis': note.diagnosis,
-            'treatment': note.treatment,
+            'symptoms': note.symptoms or '',
+            'treatment': note.treatment or '',
+            'prescription': note.prescription or '',
             'date': note.created_at.isoformat()
         } for note in medical_notes],
         'lab_reports': [{
@@ -784,7 +840,7 @@ def gender_analysis():
 # CRUD operations for patients
 @app.route('/api/patients', methods=['GET'])
 @jwt_required()
-@role_required(['admin', 'doctor'])
+@role_required(['admin', 'doctor', 'lab_tech'])
 def get_patients():
     patients = Patient.query.all()
     return jsonify([{
@@ -867,6 +923,7 @@ def import_patients_from_csv(csv_path: str) -> int:
     if not os.path.exists(csv_path):
         return 0
     imported = 0
+    skipped = 0
     with open(csv_path, newline='', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for row in reader:
@@ -877,51 +934,69 @@ def import_patients_from_csv(csv_path: str) -> int:
             age = int(row.get('age', '0') or 0)
             gender = row.get('gender', 'Male')
             department = row.get('department', '')
-
-            base_username = (first_name + (last_name[:1] if last_name else '')).lower() or 'patient'
-            username = _generate_unique_username(base_username)
-            email = f"{username}@example.com"
-
-            if User.query.filter((User.username == username) | (User.email == email)).first():
-                continue
-
-            user = User(
-                username=username,
-                email=email,
-                password_hash=bcrypt.generate_password_hash('patient123').decode('utf-8'),
-                role='patient'
-            )
-            db.session.add(user)
-            db.session.flush()
-
-            doctor = _find_doctor_for_department(department)
             
-            # Parse admission_date from CSV if available
+            # Calculate DOB and parse admission date
+            dob = _approx_dob_from_age(age)
             admission_date = None
             admission_date_str = row.get('admission_date', '').strip()
             if admission_date_str:
                 try:
                     admission_date = datetime.strptime(admission_date_str, '%Y-%m-%d').date()
                 except (ValueError, TypeError):
-                    # If parsing fails, use None (will default to user.created_at date)
                     pass
             
-            patient = Patient(
-                user_id=user.id,
-                doctor_id=doctor.id if doctor else None,
-                first_name=first_name or 'Patient',
-                last_name=last_name or 'User',
-                date_of_birth=_approx_dob_from_age(age),
-                gender=gender,
-                phone=f"555-{random.randint(1000,9999)}",
-                address=row.get('address') or 'N/A',
-                emergency_contact=row.get('emergency_contact') or 'N/A',
-                admission_date=admission_date
-            )
-            db.session.add(patient)
-            imported += 1
+            # Generate unique username - this will handle duplicates automatically
+            # We don't check for existing patients by name/DOB since dummy data can have duplicates
+
+            base_username = (first_name + (last_name[:1] if last_name else '')).lower() or 'patient'
+            username = _generate_unique_username(base_username)
+            email = f"{username}@example.com"
+
+            # Double-check username/email uniqueness (shouldn't happen due to _generate_unique_username, but safety check)
+            if User.query.filter((User.username == username) | (User.email == email)).first():
+                skipped += 1
+                continue
+
+            try:
+                user = User(
+                    username=username,
+                    email=email,
+                    password_hash=bcrypt.generate_password_hash('patient123').decode('utf-8'),
+                    role='patient'
+                )
+                db.session.add(user)
+                db.session.flush()
+
+                doctor = _find_doctor_for_department(department)
+                
+                # admission_date already parsed above
+                
+                patient = Patient(
+                    user_id=user.id,
+                    doctor_id=doctor.id if doctor else None,
+                    first_name=first_name or 'Patient',
+                    last_name=last_name or 'User',
+                    date_of_birth=dob,
+                    gender=gender,
+                    phone=f"555-{random.randint(1000,9999)}",
+                    address=row.get('address') or 'N/A',
+                    emergency_contact=row.get('emergency_contact') or 'N/A',
+                    admission_date=admission_date
+                )
+                db.session.add(patient)
+                imported += 1
+                
+                # Commit in batches of 100 to avoid memory issues
+                if imported % 100 == 0:
+                    db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                print(f"Error importing patient {full_name}: {e}")
+                skipped += 1
+                continue
 
     db.session.commit()
+    print(f"Import complete: {imported} imported, {skipped} skipped")
     return imported
 
 @app.route('/api/admin/import-patients', methods=['POST'])
@@ -980,45 +1055,76 @@ def import_doctors_endpoint():
     count = import_doctors_from_csv(source)
     return jsonify({'imported': count, 'source': source}), 200
 
-def import_lab_reports_from_csv(csv_path: str) -> int:
-    if not os.path.exists(csv_path):
-        return 0
+def _import_lab_reports_from_reader(reader) -> int:
     # Build patient lookup by full name
     patients = {f"{p.first_name} {p.last_name}": p for p in Patient.query.all()}
     imported = 0
-    with open(csv_path, newline='', encoding='utf-8') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            name = row.get('patient_name') or row.get('name') or ''
-            patient = patients.get(name)
-            if not patient:
-                # Try loose match on first token
-                token = name.split(' ')[0] if name else ''
-                patient = next((p for full, p in patients.items() if full.startswith(token)), None)
-            if not patient:
-                continue
-            test_date_str = row.get('test_date') or row.get('date') or ''
+    for row in reader:
+        name = row.get('patient_name') or row.get('name') or ''
+        patient = patients.get(name)
+        if not patient:
+            token = name.split(' ')[0] if name else ''
+            patient = next((p for full, p in patients.items() if full.startswith(token)), None)
+        if not patient:
+            continue
+        test_date_str = row.get('test_date') or row.get('date') or ''
+        try:
+            test_dt = datetime.fromisoformat(test_date_str)
+        except Exception:
             try:
-                test_dt = datetime.fromisoformat(test_date_str)
+                test_dt = datetime.strptime(test_date_str, '%Y-%m-%d')
             except Exception:
-                try:
-                    test_dt = datetime.strptime(test_date_str, '%Y-%m-%d')
-                except Exception:
-                    test_dt = datetime.utcnow()
-            report = LabReport(
-                patient_id=patient.id,
-                test_name=row.get('test_name', 'Blood Test'),
-                test_type=row.get('test_type', 'Diagnostic'),
-                result_value=float(row.get('result') or row.get('result_value') or 0),
-                normal_range=row.get('normal_range', '10-100'),
-                status=row.get('status', 'normal'),
-                notes=row.get('notes', ''),
-                created_at=test_dt
-            )
-            db.session.add(report)
-            imported += 1
+                test_dt = datetime.utcnow()
+        result_value_raw = row.get('result') or row.get('result_value') or 0
+        try:
+            result_value = float(result_value_raw)
+        except (TypeError, ValueError):
+            result_value = 0.0
+        report = LabReport(
+            patient_id=patient.id,
+            test_name=row.get('test_name', 'Blood Test'),
+            test_type=row.get('test_type', 'Diagnostic'),
+            result_value=result_value,
+            normal_range=row.get('normal_range', '10-100'),
+            status=row.get('status', 'normal'),
+            notes=row.get('notes', ''),
+            created_at=test_dt
+        )
+        db.session.add(report)
+        imported += 1
     db.session.commit()
     return imported
+
+def import_lab_reports_from_csv(csv_path: str) -> int:
+    if not os.path.exists(csv_path):
+        return 0
+    with open(csv_path, newline='', encoding='utf-8') as f:
+        reader = csv.DictReader(f)
+        return _import_lab_reports_from_reader(reader)
+
+@app.route('/api/lab-reports/upload', methods=['POST'])
+@jwt_required()
+@role_required(['lab_tech'])
+def upload_lab_reports_csv():
+    if 'file' not in request.files:
+        return jsonify({'message': 'CSV file is required.'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'message': 'Please select a CSV file to upload.'}), 400
+    
+    try:
+        decoded = file.stream.read().decode('utf-8')
+    except UnicodeDecodeError:
+        return jsonify({'message': 'Unable to decode file. Please upload a UTF-8 encoded CSV.'}), 400
+    
+    stream = io.StringIO(decoded)
+    reader = csv.DictReader(stream)
+    if not reader.fieldnames:
+        return jsonify({'message': 'CSV appears to be empty or missing headers.'}), 400
+    
+    imported = _import_lab_reports_from_reader(reader)
+    return jsonify({'message': 'Lab reports uploaded successfully.', 'imported': imported}), 200
 
 def _delete_all_patient_data():
     # Delete dependent tables first

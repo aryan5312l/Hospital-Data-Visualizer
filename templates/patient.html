@@ -24,12 +24,12 @@
 </div>
 
 <div class="row">
-    <div class="col-md-6 mb-4">
-        <div class="card">
+    <div class="col-12 col-lg-6">
+        <div class="card mb-4">
             <div class="card-header">
                 <h5><i class="fas fa-notes-medical"></i> Recent Medical Notes</h5>
             </div>
-            <div class="card-body">
+            <div class="card-body" style="max-height: 500px; overflow-y: auto;">
                 <div id="medicalNotes">
                     <div class="text-center">
                         <div class="spinner-border" role="status">
@@ -39,29 +39,8 @@
                 </div>
             </div>
         </div>
-    </div>
-    
-    <div class="col-md-6 mb-4">
-        <div class="card">
-            <div class="card-header">
-                <h5><i class="fas fa-flask"></i> Recent Lab Reports</h5>
-            </div>
-            <div class="card-body">
-                <div id="labReports">
-                    <div class="text-center">
-                        <div class="spinner-border" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
-<div class="row">
-    <div class="col-md-6 mb-4">
-        <div class="card">
+        <div class="card mb-4">
             <div class="card-header">
                 <h5><i class="fas fa-calendar-check"></i> Upcoming Appointments</h5>
             </div>
@@ -76,9 +55,24 @@
             </div>
         </div>
     </div>
-    
-    <div class="col-md-6 mb-4">
-        <div class="card">
+
+    <div class="col-12 col-lg-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-flask"></i> Recent Lab Reports</h5>
+            </div>
+            <div class="card-body" style="max-height: 500px; overflow-y: auto;">
+                <div id="labReports">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
             <div class="card-header">
                 <h5><i class="fas fa-heartbeat"></i> Health Summary</h5>
             </div>
@@ -122,8 +116,10 @@ async function loadPatientDashboard() {
         const notesHtml = data.medical_notes.map(note => `
             <div class="card mb-3">
                 <div class="card-body">
-                    <h6 class="card-title">${note.diagnosis}</h6>
-                    <p class="card-text">${note.treatment}</p>
+                    <h6 class="card-title">Diagnosis: ${note.diagnosis}</h6>
+                    ${note.symptoms ? `<p class="card-text mb-2"><strong>Symptoms:</strong> ${note.symptoms}</p>` : ''}
+                    ${note.treatment ? `<p class="card-text mb-2"><strong>Treatment:</strong> ${note.treatment}</p>` : ''}
+                    ${note.prescription ? `<p class="card-text mb-2"><strong>Prescription:</strong> ${note.prescription}</p>` : ''}
                     <small class="text-muted">
                         <i class="fas fa-calendar"></i> ${new Date(note.date).toLocaleDateString()}
                     </small>
